@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kyndly Revenue Calculator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F5F7F7; color: #2B2B2B; }
+
+        .header {
+            background: #0F3D44; padding: 28px 0 24px; text-align: center;
+        }
+        .header-sub { font-size: 12px; font-weight: 600; color: #7BD1C5; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 4px; }
+        .header h1 { font-size: 28px; font-weight: 700; color: #fff; }
+        .header p { color: #A8C5C0; font-size: 13px; margin-top: 6px; }
+
+        .container { max-width: 920px; margin: 0 auto; padding: 28px 20px 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+        .card {
+            background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #E5E5E5;
+            margin-bottom: 20px;
+        }
+        .card-label {
+            font-size: 11px; font-weight: 600; color: #6B6B6B; text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 12px;
+        }
+
+        .slider-row { display: flex; align-items: center; gap: 14px; }
+        .slider-row input[type="range"] { flex: 1; }
+        .slider-value { min-width: 70px; text-align: center; }
+        .slider-value .big { font-size: 22px; font-weight: 700; color: #0F3D44; }
+        .slider-value .small { font-size: 9px; color: #999; margin-top: 1px; }
+
+        input[type="number"] {
+            width: 80px; padding: 8px 10px; border-radius: 8px; border: 2px solid #E5E5E5;
+            font-size: 15px; font-weight: 600; color: #0F3D44; text-align: center; font-family: inherit;
+        }
+
+        .tier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .tier-btn {
+            padding: 14px 10px 12px; border-radius: 10px; cursor: pointer; text-align: center;
+            border: 2px solid #E5E5E5; background: #fff; color: #2B2B2B; position: relative;
+            transition: all .15s;
+        }
+        .tier-btn.active { border-color: #0F3D44; background: #0F3D44; color: #fff; }
+        .tier-btn .tier-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6B6B6B; }
+        .tier-btn.active .tier-name { color: #7BD1C5; }
+        .tier-btn .tier-pepm { font-size: 22px; font-weight: 700; margin-top: 6px; line-height: 1; }
+        .tier-btn .tier-platform { font-size: 11px; font-weight: 500; color: #999; margin-top: 8px; }
+        .tier-btn.active .tier-platform { color: #A8C5C0; }
+        .recommended-badge {
+            position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+            background: #4FBFB3; color: #fff; font-size: 8px; font-weight: 700;
+            padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap;
+        }
+
+        .addon-btn {
+            display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 0;
+            background: none; border: none; cursor: pointer; text-align: left;
+        }
+        .addon-btn + .addon-btn { border-top: 1px solid #F0F0F0; }
+        .checkbox {
+            width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0; margin-top: 1px;
+            border: 2px solid #ccc; display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 11px; font-weight: 700;
+        }
+        .checkbox.checked { border: none; background: #4FBFB3; }
+        .addon-title { font-size: 13px; font-weight: 500; color: #2B2B2B; }
+        .addon-desc { font-size: 10px; color: #6B6B6B; margin-top: 2px; }
+        .addon-warn { font-size: 10px; color: #B85042; margin-top: 2px; }
+
+        /* P&L Panel */
+        .pnl-panel { position: sticky; top: 20px; align-self: start; }
+        .pnl-card { background: #fff; border-radius: 14px; border: 1px solid #E5E5E5; overflow: hidden; }
+        .pnl-header { padding: 28px 24px; text-align: center; }
+        .pnl-header.positive { background: #0F3D44; }
+        .pnl-header.negative { background: #7A1F1F; }
+        .pnl-header .label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
+        .pnl-header.positive .label { color: #7BD1C5; }
+        .pnl-header.negative .label { color: #F5A8A8; }
+        .pnl-header .amount { font-size: 44px; font-weight: 700; color: #fff; margin: 6px 0 2px; line-height: 1; }
+        .pnl-header .amount span { font-size: 15px; font-weight: 400; }
+        .pnl-header.positive .amount span { color: #A8C5C0; }
+        .pnl-header.negative .amount span { color: #F5A8A8; }
+        .pnl-header .annual { font-size: 18px; font-weight: 600; }
+        .pnl-header.positive .annual { color: #7BD1C5; }
+        .pnl-header.negative .annual { color: #F5A8A8; }
+        .pnl-header .margin { font-size: 12px; margin-top: 6px; }
+        .pnl-header.positive .margin { color: #A8C5C0; }
+        .pnl-header.negative .margin { color: #F5A8A8; }
+
+        .pnl-body { padding: 20px 24px; }
+        .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+        .section-label.revenue { color: #4FBFB3; }
+        .section-label.costs { color: #B85042; }
+
+        .pl-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; }
+        .pl-row .pl-label { color: #6B6B6B; }
+        .pl-row .pl-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+        .pl-row .pl-value.neg { color: #B85042; }
+
+        .pl-total {
+            display: flex; justify-content: space-between; padding: 8px 0 4px;
+            border-top: 1px solid #E5E5E5; margin-top: 4px;
+        }
+        .pl-total .pl-label { font-size: 13px; font-weight: 600; }
+        .pl-total .pl-value { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+        .net-profit { border-top: 2px solid #0F3D44; padding-top: 12px; margin-top: 12px; }
+        .net-profit .pl-label { font-size: 14px; font-weight: 700; color: #0F3D44; }
+        .net-profit .pl-value { font-size: 20px; font-weight: 700; }
+
+        .helper-text { font-size: 11px; color: #6B6B6B; margin-top: 8px; }
+        .helper-highlight { font-weight: 600; color: #0F3D44; }
+        .helper-muted { color: #999; }
+        .bor-helper { font-size: 10px; color: #4FBFB3; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-sub">Integrated ICHRA Platform</div>
+        <h1>Revenue Calculator</h1>
+        <p>See what your ICHRA line of business could earn</p>
+    </div>
+
+    <div class="container">
+        <!-- LEFT — Inputs -->
+        <div>
+            <div class="card">
+                <div class="card-label">Your Admin PEPM (what you charge employers)</div>
+                <div class="slider-row">
+                    <input type="range" id="adminPepm" min="20" max="100" step="5" value="50">
+                    <div class="slider-value">
+                        <div class="big" id="adminPepmDisplay">$50</div>
+                        <div class="small">PEPM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">ICHRA Membership (Employees)</div>
+                <div class="slider-row">
+                    <input type="range" id="membershipSlider" min="100" max="10000" step="100" value="500">
+                    <input type="number" id="membershipInput" min="50" step="100" value="500">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Member-to-Employee Ratio</div>
+                <div class="slider-row">
+                    <input type="range" id="ratioSlider" min="10" max="30" step="1" value="15">
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <input type="text" id="ratioInput" value="1.5" style="width: 50px; padding: 8px 6px; border-radius: 8px; border: 2px solid #E5E5E5; font-size: 15px; font-weight: 600; color: #0F3D44; text-align: center;">
+                        <span style="font-size: 13px; color: #999; font-weight: 600;">x</span>
+                    </div>
+                </div>
+                <div class="helper-text" id="ratioHelper"></div>
+                <div class="bor-helper" id="borHelper"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Kyndly Platform Tier</div>
+                <div class="tier-grid" id="tierGrid"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Add-On Services</div>
+                <button class="addon-btn" id="conciergeBtn">
+                    <div class="checkbox" id="conciergeCheck"></div>
+                    <div>
+                        <div class="addon-title">Kyndly Concierge Enrollment</div>
+                        <div class="addon-desc">Kyndly serves as Broker of Record — +${{ config.concierge_pepm }} PEPM</div>
+                        <div class="addon-warn" id="conciergeWarn"></div>
+                    </div>
+                </button>
+                <button class="addon-btn" id="paymentBtn">
+                    <div class="checkbox" id="paymentCheck"></div>
+                    <div>
+                        <div class="addon-title">Kyndly Payment Processing</div>
+                        <div class="addon-desc">Kyndly collects from employer, pays carriers — +${{ config.payment_processing_pepm }} PEPM</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- RIGHT — P&L -->
+        <div class="pnl-panel">
+            <div class="pnl-card">
+                <div class="pnl-header positive" id="pnlHeader">
+                    <div class="label">ICHRA Line of Business Profit</div>
+                    <div class="amount" id="monthlyAmount"></div>
+                    <div class="annual" id="annualAmount"></div>
+                    <div class="margin" id="marginDisplay"></div>
+                </div>
+                <div class="pnl-body" id="pnlBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG = {{ config | tojson }};
+
+        // State
+        let membership = CONFIG.default_membership;
+        let adminPepm = CONFIG.default_admin_pepm;
+        let memberRatio = CONFIG.default_member_ratio;
+        let concierge = false;
+        let payment = false;
+        let tierOverride = null;
+
+        function fmt(n) {
+            return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+        function fmt2(n) {
+            return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        function nm(n) { return n.toLocaleString(); }
+
+        function findBestTier() {
+            let best = CONFIG.tiers[0];
+            let bestCost = Infinity;
+            for (const t of CONFIG.tiers) {
+                const cost = t.platform + t.pepm * membership
+                    + (concierge ? CONFIG.concierge_pepm : 0) * membership
+                    + (payment ? CONFIG.payment_processing_pepm : 0) * membership;
+                if (cost < bestCost) { bestCost = cost; best = t; }
+            }
+            return best.id;
+        }
+
+        function calculate() {
+            const totalMembers = Math.round(membership * memberRatio);
+            const recommended = findBestTier();
+            const activeTierId = tierOverride || recommended;
+            const tier = CONFIG.tiers.find(t => t.id === activeTierId);
+
+            // Revenue
+            const adminRevenue = adminPepm * membership;
+            // BUG: should use totalMembers, not membership
+            const borRevenue = concierge ? 0 : CONFIG.bor_commission_pmpm * membership;
+            const grossRevenue = adminRevenue + borRevenue;
+
+            // Costs
+            const platformCost = tier.platform;
+            const pepmCost = tier.pepm * membership;
+            const conciergeCost = concierge ? CONFIG.concierge_pepm * membership : 0;
+            const paymentCost = payment ? CONFIG.payment_processing_pepm * membership : 0;
+            const totalCost = platformCost + pepmCost + conciergeCost + paymentCost;
+
+            // Profit
+            const monthlyProfit = grossRevenue - totalCost;
+            const annualProfit = monthlyProfit * 12;
+            const margin = grossRevenue > 0 ? (monthlyProfit / grossRevenue) * 100 : 0;
+
+            return { tier, recommended, totalMembers, adminRevenue, borRevenue, grossRevenue,
+                     platformCost, pepmCost, conciergeCost, paymentCost, totalCost,
+                     monthlyProfit, annualProfit, margin };
+        }
+
+        function renderTiers(recommended, activeTierId) {
+            const grid = document.getElementById('tierGrid');
+            grid.innerHTML = '';
+            CONFIG.tiers.forEach(t => {
+                const active = activeTierId === t.id;
+                const isRec = recommended === t.id;
+                const btn = document.createElement('button');
+                btn.className = 'tier-btn' + (active ? ' active' : '');
+                btn.innerHTML = `
+                    ${isRec ? '<div class="recommended-badge">Recommended</div>' : ''}
+                    <div class="tier-name">${t.name}</div>
+                    <div class="tier-pepm">${fmt2(t.pepm)}</div>
+                    <div style="font-size:9px;color:${active?'#A8C5C0':'#999'};margin-top:2px">PEPM</div>
+                    <div class="tier-platform">${fmt(t.platform)}/mo</div>
+                `;
+                btn.onclick = () => { tierOverride = t.id === recommended ? null : t.id; render(); };
+                grid.appendChild(btn);
+            });
+        }
+
+        function render() {
+            const pnl = calculate();
+            const positive = pnl.monthlyProfit >= 0;
+
+            // Inputs display
+            document.getElementById('adminPepmDisplay').textContent = '$' + adminPepm;
+            document.getElementById('ratioHelper').innerHTML =
+                `${nm(membership)} EEs × ${memberRatio.toFixed(1)} = <span class="helper-highlight">${nm(pnl.totalMembers)} members</span> <span class="helper-muted">(incl. dependents)</span>`;
+
+            if (!concierge) {
+                document.getElementById('borHelper').innerHTML =
+                    `BOR commissions: ${nm(pnl.totalMembers)} members × $${CONFIG.bor_commission_pmpm} PMPM = <strong>${fmt(CONFIG.bor_commission_pmpm * pnl.totalMembers)}/mo</strong>`;
+            } else {
+                document.getElementById('borHelper').innerHTML = '';
+            }
+
+            // Tiers
+            renderTiers(pnl.recommended, tierOverride || pnl.recommended);
+
+            // Checkboxes
+            const cc = document.getElementById('conciergeCheck');
+            cc.className = 'checkbox' + (concierge ? ' checked' : '');
+            cc.textContent = concierge ? '✓' : '';
+            const pc = document.getElementById('paymentCheck');
+            pc.className = 'checkbox' + (payment ? ' checked' : '');
+            pc.textContent = payment ? '✓' : '';
+
+            // Concierge warning
+            const warn = document.getElementById('conciergeWarn');
+            if (!concierge) {
+                warn.textContent = `Note: Selecting this removes your BOR commission revenue (${fmt(CONFIG.bor_commission_pmpm * pnl.totalMembers)}/mo)`;
+            } else {
+                warn.textContent = 'BOR commission revenue removed — Kyndly is now Broker of Record';
+            }
+
+            // P&L Header
+            const header = document.getElementById('pnlHeader');
+            header.className = 'pnl-header ' + (positive ? 'positive' : 'negative');
+            document.getElementById('monthlyAmount').innerHTML = `${fmt(pnl.monthlyProfit)}<span>/mo</span>`;
+            document.getElementById('annualAmount').innerHTML = `${fmt(pnl.annualProfit)} <span style="font-size:12px;font-weight:400">/year</span>`;
+            document.getElementById('marginDisplay').textContent = pnl.margin.toFixed(1) + '% margin';
+
+            // P&L Body
+            let body = `<div class="section-label revenue">Revenue</div>`;
+            body += plRow(`ICHRA Admin (${fmt2(adminPepm)} × ${nm(membership)} EEs)`, pnl.adminRevenue);
+            if (pnl.borRevenue > 0) {
+                body += plRow(`BOR Commissions ($${CONFIG.bor_commission_pmpm} × ${nm(pnl.totalMembers)} members)`, pnl.borRevenue);
+            }
+            if (concierge) {
+                body += `<div style="font-size:11px;color:#B85042;padding:2px 0 4px;font-style:italic">BOR commissions: $0 (Kyndly is BOR)</div>`;
+            }
+            body += plTotal('Gross Monthly Revenue', pnl.grossRevenue, '#0F3D44');
+
+            body += `<div style="height:16px"></div><div class="section-label costs">Costs</div>`;
+            body += plRow(`Kyndly Platform (${pnl.tier.name})`, -pnl.platformCost, true);
+            body += plRow(`Kyndly PEPM (${fmt2(pnl.tier.pepm)} × ${nm(membership)} EEs)`, -pnl.pepmCost, true);
+            if (pnl.conciergeCost > 0) body += plRow(`Kyndly Concierge ($${CONFIG.concierge_pepm} × ${nm(membership)} EEs)`, -pnl.conciergeCost, true);
+            if (pnl.paymentCost > 0) body += plRow(`Kyndly Payment Processing ($${CONFIG.payment_processing_pepm} × ${nm(membership)} EEs)`, -pnl.paymentCost, true);
+            body += plTotal('Total Monthly Costs', -pnl.totalCost, '#B85042');
+
+            body += `<div class="net-profit">
+                <div class="pl-row"><span class="pl-label" style="font-size:14px;font-weight:700;color:#0F3D44">Monthly Net Profit</span>
+                <span class="pl-value" style="font-size:20px;font-weight:700;color:${positive?'#0F3D44':'#B85042'}">${fmt(pnl.monthlyProfit)}</span></div>
+                <div class="pl-row"><span class="pl-label" style="font-size:12px;color:#6B6B6B">Annual Net Profit</span>
+                <span class="pl-value" style="font-size:14px;font-weight:600;color:${positive?'#0F3D44':'#B85042'}">${fmt(pnl.annualProfit)}</span></div>
+            </div>`;
+
+            document.getElementById('pnlBody').innerHTML = body;
+        }
+
+        function plRow(label, value, neg) {
+            return `<div class="pl-row"><span class="pl-label">${label}</span><span class="pl-value${neg?' neg':''}">${fmt(value)}</span></div>`;
+        }
+        function plTotal(label, value, color) {
+            return `<div class="pl-total"><span class="pl-label" style="color:${color}">${label}</span><span class="pl-value" style="color:${color}">${fmt(value)}</span></div>`;
+        }
+
+        // Event listeners
+        document.getElementById('adminPepm').oninput = e => { adminPepm = +e.target.value; render(); };
+        document.getElementById('membershipSlider').oninput = e => {
+            membership = Math.max(50, +e.target.value);
+            document.getElementById('membershipInput').value = membership;
+            render();
+        };
+        document.getElementById('membershipInput').oninput = e => {
+            membership = Math.max(50, +e.target.value);
+            document.getElementById('membershipSlider').value = Math.min(10000, membership);
+            render();
+        };
+        document.getElementById('ratioSlider').oninput = e => {
+            memberRatio = +e.target.value / 10;
+            document.getElementById('ratioInput').value = memberRatio.toFixed(1);
+            render();
+        };
+        document.getElementById('ratioInput').oninput = e => {
+            const v = parseFloat(e.target.value);
+            if (!isNaN(v) && v >= 1.0 && v <= 3.0) {
+                memberRatio = Math.round(v * 10) / 10;
+                document.getElementById('ratioSlider').value = Math.round(memberRatio * 10);
+            }
+            render();
+        };
+        document.getElementById('conciergeBtn').onclick = () => { concierge = !concierge; render(); };
+        document.getElementById('paymentBtn').onclick = () => { payment = !payment; render(); };
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>
