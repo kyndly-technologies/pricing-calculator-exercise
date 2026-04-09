@@ -1,0 +1,152 @@
+<div class="page-shell">
+  <header class="page-header">
+    <div class="eyebrow">Integrated ICHRA Platform</div>
+    <h1>Revenue Calculator</h1>
+    <p class="subtitle">See what your ICHRA line of business could earn</p>
+    <% if @client_name.present? %>
+      <div class="client-pill">Pricing for: <%= @client_name %></div>
+    <% end %>
+  </header>
+
+  <main class="content">
+    <div class="calculator-grid" data-calculator-config="<%= json_escape(@config.to_json) %>">
+      <section class="stack">
+        <div class="card">
+          <div class="card-label">Your Admin PEPM (what you charge employers)</div>
+          <div class="input-row">
+            <input id="admin-range" class="range-input" type="range" min="20" max="100" step="5" value="<%= @config[:default_admin_pepm] %>">
+            <div class="value-box">
+              <strong id="admin-value">$<%= @config[:default_admin_pepm] %></strong>
+              <span>PEPM</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">ICHRA Membership (Employees)</div>
+          <div class="input-row">
+            <input id="membership-range" class="range-input" type="range" min="100" max="10000" step="100" value="<%= @config[:default_membership] %>">
+            <input id="membership-input" class="number-input" type="number" min="50" step="100" value="<%= @config[:default_membership] %>">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Member-to-Employee Ratio</div>
+          <div class="input-row">
+            <input id="ratio-range" class="range-input" type="range" min="10" max="30" step="1" value="<%= (@config[:default_member_ratio] * 10).round %>">
+            <div class="ratio-inline">
+              <input id="ratio-input" class="ratio-input" type="text" value="<%= format('%.1f', @config[:default_member_ratio]) %>">
+              <span>x</span>
+            </div>
+          </div>
+          <div id="membership-helper" class="helper"></div>
+          <div id="bor-helper" class="helper-note"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Kyndly Platform Tier</div>
+          <div class="tier-grid">
+            <% @config[:tiers].each do |tier| %>
+              <button class="tier-button" type="button" data-tier-button="<%= tier[:id] %>">
+                <div class="tier-recommended" hidden>Recommended</div>
+                <div class="tier-name"><%= tier[:name] %></div>
+                <div class="tier-price"><%= number_to_currency(tier[:pepm], precision: 2) %></div>
+                <div class="tier-meta">PEPM</div>
+                <div class="tier-platform"><%= number_to_currency(tier[:platform], precision: 0) %>/mo</div>
+              </button>
+            <% end %>
+          </div>
+          <div class="reset-row">
+            <button id="reset-tier" class="text-button" type="button" hidden>Reset to recommended</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Add-On Services</div>
+
+          <label class="addon-button" for="concierge-input">
+            <span id="concierge-chip" class="checkbox-chip"></span>
+            <span>
+              <input id="concierge-input" type="checkbox" hidden>
+              <span class="addon-title">Kyndly Concierge Enrollment</span>
+              <span class="addon-copy">Kyndly serves as Broker of Record. +$<%= @config[:concierge_pepm] %> PEPM</span>
+              <span id="concierge-impact" class="addon-impact"></span>
+            </span>
+          </label>
+
+          <label class="addon-button" for="payment-input">
+            <span id="payment-chip" class="checkbox-chip"></span>
+            <span>
+              <input id="payment-input" type="checkbox" hidden>
+              <span class="addon-title">Kyndly Payment Processing</span>
+              <span class="addon-copy">Kyndly collects from employer, pays carriers. +$<%= @config[:payment_processing_pepm] %> PEPM</span>
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <aside class="summary-wrap">
+        <div class="summary-card">
+          <div id="summary-head" class="summary-head">
+            <div class="summary-kicker">ICHRA Line of Business Profit</div>
+            <div id="monthly-profit" class="summary-value"></div>
+            <div id="annual-profit" class="summary-subvalue"></div>
+            <div id="profit-margin" class="summary-margin"></div>
+          </div>
+
+          <div class="summary-body">
+            <div class="section-label revenue">Revenue</div>
+            <div class="pl-row">
+              <span id="admin-revenue-label"></span>
+              <strong id="admin-revenue-value"></strong>
+            </div>
+            <div id="bor-row" class="pl-row">
+              <span id="bor-revenue-label"></span>
+              <strong id="bor-revenue-value"></strong>
+            </div>
+            <div id="bor-note" class="profit-note" hidden>BOR commissions: $0 (Kyndly is BOR)</div>
+            <div class="pl-total">
+              <span>Gross Monthly Revenue</span>
+              <strong id="gross-revenue-value"></strong>
+            </div>
+
+            <div class="spacer"></div>
+
+            <div class="section-label costs">Costs</div>
+            <div class="pl-row negative">
+              <span id="platform-cost-label"></span>
+              <strong id="platform-cost-value"></strong>
+            </div>
+            <div class="pl-row negative">
+              <span id="pepm-cost-label"></span>
+              <strong id="pepm-cost-value"></strong>
+            </div>
+            <div id="concierge-row" class="pl-row negative" hidden>
+              <span id="concierge-cost-label"></span>
+              <strong id="concierge-cost-value"></strong>
+            </div>
+            <div id="payment-row" class="pl-row negative" hidden>
+              <span id="payment-cost-label"></span>
+              <strong id="payment-cost-value"></strong>
+            </div>
+            <div class="pl-total">
+              <span>Total Monthly Costs</span>
+              <strong id="total-cost-value"></strong>
+            </div>
+
+            <div class="net-block">
+              <div class="net-row">
+                <strong>Monthly Net Profit</strong>
+                <span id="net-profit-value"></span>
+              </div>
+              <div class="annual-row">
+                <span>Annual Net Profit</span>
+                <span id="annual-net-profit-value"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
